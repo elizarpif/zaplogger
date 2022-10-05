@@ -1,4 +1,4 @@
-module zaplogger
+module github.com/elizarpif/zaplogger
 
 go 1.19
 
