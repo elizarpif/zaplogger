@@ -2,37 +2,37 @@ package zaplogger
 
 import (
 	"context"
+	"os"
 
 	"go.uber.org/zap"
-)
-
-type inCtx int
-
-const (
-	requestIdKey inCtx = iota
-	traceIdKey
+	"go.uber.org/zap/zapcore"
 )
 
 var logger *zap.SugaredLogger
 
+func newLogger() *zap.Logger {
+	config := zap.NewProductionEncoderConfig()
+
+	config.EncodeTime = zapcore.RFC3339TimeEncoder
+	consoleEncoder := zapcore.NewJSONEncoder(config)
+	defaultLogLevel := zapcore.DebugLevel
+
+	core := zapcore.NewTee(
+		zapcore.NewCore(consoleEncoder, zapcore.AddSync(os.Stdout), defaultLogLevel),
+	)
+
+	baseLogger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+	return baseLogger
+}
+
 func init() {
-	baseLogger, _ := zap.NewProduction()
+	baseLogger := newLogger()
 	defer baseLogger.Sync() // flushes buffer, if any
 
 	logger = baseLogger.Sugar()
 }
 
-// WithReqId returns a context which knows its request ID
-func WithReqId(ctx context.Context, rqId string) context.Context {
-	return context.WithValue(ctx, requestIdKey, rqId)
-}
-
-// WithTraceId returns a context which knows its trace ID
-func WithTraceId(ctx context.Context, traceID string) context.Context {
-	return context.WithValue(ctx, traceIdKey, traceID)
-}
-
-func addValuesFromCtx(ctx context.Context) *zap.SugaredLogger {
+func addValuesFromCtxToLogger(ctx context.Context) *zap.SugaredLogger {
 	newLogger := logger
 	if ctx != nil {
 		if ctxRqId, ok := ctx.Value(requestIdKey).(string); ok {
@@ -46,38 +46,49 @@ func addValuesFromCtx(ctx context.Context) *zap.SugaredLogger {
 	return newLogger
 }
 
+// With ...
+func With(args ...interface{}) {
+	logger = logger.With(args...)
+}
+
+// Info ...
 func Info(ctx context.Context, args ...interface{}) {
-	log := addValuesFromCtx(ctx)
+	log := addValuesFromCtxToLogger(ctx)
 
 	log.Info(args)
 }
 
+// Infof ...
 func Infof(ctx context.Context, template string, args ...interface{}) {
-	log := addValuesFromCtx(ctx)
+	log := addValuesFromCtxToLogger(ctx)
 
 	log.Infof(template, args)
 }
 
+// Debug ...
 func Debug(ctx context.Context, args ...interface{}) {
-	log := addValuesFromCtx(ctx)
+	log := addValuesFromCtxToLogger(ctx)
 
 	log.Debug(args)
 }
 
+// Debugf ...
 func Debugf(ctx context.Context, template string, args ...interface{}) {
-	log := addValuesFromCtx(ctx)
+	log := addValuesFromCtxToLogger(ctx)
 
 	log.Debugf(template, args)
 }
 
+// Error ...
 func Error(ctx context.Context, args ...interface{}) {
-	log := addValuesFromCtx(ctx)
+	log := addValuesFromCtxToLogger(ctx)
 
 	log.Error(args)
 }
 
+// Errorf ...
 func Errorf(ctx context.Context, template string, args ...interface{}) {
-	log := addValuesFromCtx(ctx)
+	log := addValuesFromCtxToLogger(ctx)
 
 	log.Errorf(template, args)
 }

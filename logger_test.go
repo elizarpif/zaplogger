@@ -28,7 +28,7 @@ func TestWithTraceId(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := WithTraceId(tt.args.ctx, tt.args.traceID)
 
-			log := addValuesFromCtx(ctx)
+			log := addValuesFromCtxToLogger(ctx)
 			log.Info("check")
 		})
 	}
